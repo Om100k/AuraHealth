@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@media print {
+  /* Hide UI chrome */
+  header,
+  nav,
+  footer,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset layout constraints for print */
+  html, body, #root, main {
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 12pt !important;
+  }
+
+  /* Clean up cards */
+  .shadow-xs,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl,
+  .shadow-2xs {
+    box-shadow: none !important;
+  }
+
+  /* Prevent page breaks inside cards and sections */
+  .p-6,
+  .p-5,
+  .p-4,
+  .rounded-2xl,
+  .rounded-xl {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Make sure borders print sharply */
+  .border {
+    border-color: #d4d4d4 !important;
+  }
+}
