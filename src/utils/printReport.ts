@@ -1,324 +1,313 @@
+import { jsPDF } from 'jspdf';
 import { AIHealthAnalysis, Symptom } from '../types';
 
-export function generateReportHtml(
+/**
+ * Generates and downloads a clean, professional PDF file of the clinical report
+ */
+export function downloadPdfReport(
   analysis: AIHealthAnalysis,
   selectedSymptoms: Symptom[]
-): string {
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+) {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
   });
 
-  const triage = analysis.triage || {
-    level: 'routine',
-    headline: 'Consult a Healthcare Professional',
-    actionPoints: ['Monitor symptoms', 'Seek doctor review if symptoms persist'],
-    timeframe: 'Within 24 to 48 hours',
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const contentWidth = pageWidth - margin * 2;
+  let y = 16;
+
+  const checkPageBreak = (spaceNeeded: number) => {
+    if (y + spaceNeeded > pageHeight - 16) {
+      doc.addPage();
+      y = 16;
+    }
   };
 
-  const triageBadgeColor =
-    triage.level === 'emergency'
-      ? '#e11d48'
-      : triage.level === 'urgent'
-      ? '#d97706'
-      : triage.level === 'self_care'
-      ? '#059669'
-      : '#2563eb';
+  // Header Title
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(23, 23, 23);
+  doc.text('AuraHealth Clinical Intake Summary', margin, y);
+  y += 6;
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>AuraHealth - Clinical Symptom & Health Report</title>
-  <style>
-    @page {
-      size: A4;
-      margin: 15mm 15mm 15mm 15mm;
-    }
-    * {
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color: #171717;
-      background: #ffffff;
-      line-height: 1.5;
-      font-size: 13px;
-      margin: 0;
-      padding: 20px;
-    }
-    .header {
-      border-bottom: 2px solid #171717;
-      padding-bottom: 12px;
-      margin-bottom: 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
-    .title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #171717;
-      margin: 0;
-    }
-    .subtitle {
-      font-size: 11px;
-      color: #525252;
-      margin-top: 3px;
-    }
-    .date {
-      font-size: 11px;
-      color: #737373;
-      text-align: right;
-    }
-    .triage-box {
-      border: 1.5px solid ${triageBadgeColor};
-      background: #fafafa;
-      border-left: 6px solid ${triageBadgeColor};
-      border-radius: 6px;
-      padding: 12px 14px;
-      margin-bottom: 16px;
-      page-break-inside: avoid;
-    }
-    .triage-badge {
-      display: inline-block;
-      background: ${triageBadgeColor};
-      color: #ffffff;
-      font-weight: 700;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      margin-bottom: 6px;
-    }
-    .triage-headline {
-      font-size: 15px;
-      font-weight: 700;
-      color: #171717;
-      margin: 0 0 4px 0;
-    }
-    .triage-timeframe {
-      font-size: 11px;
-      font-weight: 600;
-      color: #525252;
-      margin-bottom: 8px;
-    }
-    .section {
-      margin-bottom: 18px;
-      page-break-inside: avoid;
-    }
-    .section-title {
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: #262626;
-      border-bottom: 1px solid #e5e5e5;
-      padding-bottom: 4px;
-      margin-bottom: 8px;
-    }
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      background: #f5f5f5;
-      border: 1px solid #e5e5e5;
-      border-radius: 6px;
-      padding: 10px;
-      margin-bottom: 12px;
-    }
-    .grid-item label {
-      display: block;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      color: #737373;
-      margin-bottom: 2px;
-    }
-    .grid-item span {
-      font-size: 12px;
-      font-weight: 600;
-      color: #171717;
-    }
-    .pill {
-      display: inline-block;
-      background: #ffffff;
-      border: 1px solid #d4d4d4;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 11px;
-      font-weight: 600;
-      margin: 2px 2px 2px 0;
-    }
-    .card {
-      background: #ffffff;
-      border: 1px solid #e5e5e5;
-      border-radius: 6px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
-      page-break-inside: avoid;
-    }
-    .card-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #171717;
-      margin: 0 0 4px 0;
-    }
-    .uncertainty-note {
-      font-size: 10px;
-      color: #b45309;
-      background: #fef3c7;
-      padding: 2px 6px;
-      border-radius: 4px;
-      display: inline-block;
-      margin-top: 4px;
-    }
-    .warning-box {
-      border: 1px solid #fecdd3;
-      background: #fff1f2;
-      border-radius: 6px;
-      padding: 10px 12px;
-      color: #9f1239;
-      margin-bottom: 14px;
-      page-break-inside: avoid;
-    }
-    .warning-box ul {
-      margin: 4px 0 0 0;
-      padding-left: 18px;
-    }
-    .disclaimer-box {
-      border-top: 2px solid #171717;
-      padding-top: 10px;
-      margin-top: 24px;
-      font-size: 10px;
-      color: #525252;
-      line-height: 1.4;
-      page-break-inside: avoid;
-    }
-    ul {
-      margin: 4px 0 0 0;
-      padding-left: 18px;
-    }
-    li {
-      margin-bottom: 3px;
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <h1 class="title">AuraHealth Clinical Intake Summary</h1>
-      <div class="subtitle">AI Symptom Analysis & Pharmacist Health Reference Report</div>
-    </div>
-    <div class="date">
-      <strong>Generated:</strong><br />${currentDate}
-    </div>
-  </div>
+  // Subtitle
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(115, 115, 115);
+  doc.text(
+    'AI Symptom Analysis & Pharmacist Medicine Reference Report',
+    margin,
+    y
+  );
 
-  <div class="triage-box">
-    <div class="triage-badge">${triage.level.toUpperCase()} LEVEL</div>
-    <h2 class="triage-headline">${triage.headline}</h2>
-    <div class="triage-timeframe">Recommended Action Window: ${triage.timeframe}</div>
-    <ul>
-      ${triage.actionPoints.map((pt) => `<li>${pt}</li>`).join('')}
-    </ul>
-  </div>
+  // Date on top right
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+  doc.text(`Generated: ${dateStr}`, pageWidth - margin, y, { align: 'right' });
+  y += 4;
 
-  <div class="section">
-    <div class="section-title">Patient Reported Symptoms & Clinical Timeline</div>
-    <div class="summary-grid">
-      <div class="grid-item">
-        <label>Selected Symptoms</label>
-        <div>${analysis.symptomSummary.symptoms.map((s) => `<span class="pill">${s}</span>`).join('')}</div>
-      </div>
-      <div class="grid-item">
-        <label>Duration & Onset</label>
-        <span>${analysis.symptomSummary.duration}</span>
-        <div style="font-size:10px; color:#737373; margin-top:2px;">Onset: ${analysis.symptomSummary.keyAnswers?.['Onset Pattern'] || 'Noted'}</div>
-      </div>
-      <div class="grid-item">
-        <label>Reported Severity</label>
-        <span>${analysis.symptomSummary.severity} Impact</span>
-        <div style="font-size:10px; color:#737373; margin-top:2px;">Age: ${analysis.symptomSummary.keyAnswers?.['Age Group'] || 'Adult'}</div>
-      </div>
-    </div>
+  // Horizontal divider
+  doc.setDrawColor(23, 23, 23);
+  doc.setLineWidth(0.6);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 7;
 
-    ${
-      analysis.symptomSummary.keyAnswers
-        ? `<div style="font-size:11px; color:#525252; background:#fafafa; border:1px solid #f0f0f0; border-radius:4px; padding:6px 10px; margin-bottom:10px;">
-            <strong>Clinical Context Details: </strong>
-            ${Object.entries(analysis.symptomSummary.keyAnswers)
-              .map(([k, v]) => `<span><strong>${k}:</strong> ${v}</span>`)
-              .join(' • ')}
-          </div>`
-        : ''
-    }
-  </div>
+  // Triage Box
+  const triage = analysis.triage || {
+    level: 'routine',
+    headline: 'Healthcare Consultation',
+    timeframe: '24-48 hours',
+    actionPoints: [],
+  };
 
-  ${
-    analysis.warningSigns && analysis.warningSigns.length > 0
-      ? `<div class="warning-box">
-          <strong style="text-transform:uppercase; font-size:11px; letter-spacing:0.5px;">Emergency Warning Signs & Critical Red Flags:</strong>
-          <ul>
-            ${analysis.warningSigns.map((w) => `<li>${w}</li>`).join('')}
-          </ul>
-        </div>`
-      : ''
+  let badgeR = 37,
+    badgeG = 99,
+    badgeB = 235; // blue
+  if (triage.level === 'emergency') {
+    badgeR = 225;
+    badgeG = 29;
+    badgeB = 72;
+  } else if (triage.level === 'urgent') {
+    badgeR = 217;
+    badgeG = 119;
+    badgeB = 6;
+  } else if (triage.level === 'self_care') {
+    badgeR = 5;
+    badgeG = 150;
+    badgeB = 105;
   }
 
-  ${
-    analysis.allergyAlerts && analysis.allergyAlerts.length > 0
-      ? `<div class="card" style="border-left: 4px solid #f59e0b; background:#fffbeb;">
-          <strong style="color:#b45309; font-size:11px; text-transform:uppercase;">Allergy Cross-Reference Alerts:</strong>
-          <ul>
-            ${analysis.allergyAlerts.map((a) => `<li>${a}</li>`).join('')}
-          </ul>
-        </div>`
-      : ''
+  // Triage card container
+  doc.setFillColor(250, 250, 250);
+  doc.setDrawColor(badgeR, badgeG, badgeB);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(margin, y, contentWidth, 26, 2, 2, 'FD');
+
+  // Colored left accent bar
+  doc.setFillColor(badgeR, badgeG, badgeB);
+  doc.rect(margin, y, 3, 26, 'F');
+
+  // Triage text
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(badgeR, badgeG, badgeB);
+  doc.text(
+    `RECOMMENDED TRIAGE TIER: ${triage.level.toUpperCase()} LEVEL`,
+    margin + 6,
+    y + 6
+  );
+
+  doc.setFontSize(11);
+  doc.setTextColor(23, 23, 23);
+  doc.text(
+    doc.splitTextToSize(triage.headline, contentWidth - 12)[0] || '',
+    margin + 6,
+    y + 12
+  );
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(82, 82, 82);
+  doc.text(`Action Timeframe: ${triage.timeframe}`, margin + 6, y + 17);
+
+  if (triage.actionPoints && triage.actionPoints.length > 0) {
+    const pt = triage.actionPoints[0];
+    doc.text(`• ${doc.splitTextToSize(pt, contentWidth - 14)[0]}`, margin + 6, y + 22);
+  }
+  y += 32;
+
+  // SECTION 1: Patient Reported Symptoms & Profile
+  checkPageBreak(30);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(23, 23, 23);
+  doc.text('1. PATIENT REPORTED SYMPTOMS & CLINICAL TIMELINE', margin, y);
+  y += 5;
+
+  doc.setFillColor(245, 245, 245);
+  doc.setDrawColor(229, 229, 229);
+  doc.roundedRect(margin, y, contentWidth, 18, 1.5, 1.5, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(115, 115, 115);
+  doc.text('SYMPTOMS:', margin + 4, y + 5);
+  doc.text('DURATION:', margin + 70, y + 5);
+  doc.text('SEVERITY:', margin + 125, y + 5);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(23, 23, 23);
+  doc.text(
+    doc.splitTextToSize(analysis.symptomSummary.symptoms.join(', '), 60)[0] || '',
+    margin + 4,
+    y + 11
+  );
+  doc.text(analysis.symptomSummary.duration, margin + 70, y + 11);
+  doc.text(`${analysis.symptomSummary.severity} Impact`, margin + 125, y + 11);
+  y += 23;
+
+  // Key context answers
+  if (analysis.symptomSummary.keyAnswers) {
+    checkPageBreak(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(82, 82, 82);
+    const answersText = Object.entries(analysis.symptomSummary.keyAnswers)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('  |  ');
+    const splitAnswers = doc.splitTextToSize(answersText, contentWidth);
+    doc.text(splitAnswers, margin, y);
+    y += splitAnswers.length * 4 + 3;
   }
 
-  <div class="section">
-    <div class="section-title">Possible General Explanations (Educational Reference)</div>
-    ${analysis.possibleExplanations
-      .map(
-        (exp) => `<div class="card">
-        <div class="card-title">${exp.title}</div>
-        <div style="color:#404040; margin-bottom:4px;">${exp.description}</div>
-        <div class="uncertainty-note">Note: ${exp.uncertaintyNote}</div>
-        ${
-          exp.typicalCharacteristics && exp.typicalCharacteristics.length > 0
-            ? `<div style="font-size:11px; color:#525252; margin-top:4px;">
-                <strong>Typical characteristics: </strong>${exp.typicalCharacteristics.join(', ')}
-               </div>`
-            : ''
-        }
-      </div>`
-      )
-      .join('')}
-  </div>
+  // SECTION 2: Emergency Warning Signs
+  if (analysis.warningSigns && analysis.warningSigns.length > 0) {
+    checkPageBreak(25);
+    doc.setFillColor(255, 241, 242);
+    doc.setDrawColor(254, 205, 211);
+    doc.roundedRect(margin, y, contentWidth, 8 + analysis.warningSigns.length * 5, 1.5, 1.5, 'FD');
 
-  <div class="section">
-    <div class="section-title">Questions to Discuss with Your Doctor or Pharmacist</div>
-    <ul>
-      ${analysis.pharmacistConsultationGuide
-        .map((q) => `<li>${q}</li>`)
-        .join('')}
-    </ul>
-  </div>
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(159, 18, 57);
+    doc.text('CRITICAL WARNING SIGNS TO MONITOR (SEEK ER IF DEVELOPING):', margin + 4, y + 5);
 
-  <div class="disclaimer-box">
-    <strong>MANDATORY DISCLAIMER:</strong><br />
-    "${analysis.mandatoryDisclaimer}"
-  </div>
-</body>
-</html>`;
+    doc.setFont('helvetica', 'normal');
+    let warnY = y + 10;
+    analysis.warningSigns.forEach((w) => {
+      const splitW = doc.splitTextToSize(`• ${w}`, contentWidth - 8);
+      doc.text(splitW[0] || '', margin + 4, warnY);
+      warnY += 4.5;
+    });
+    y = warnY + 4;
+  }
+
+  // SECTION 3: Relevant Tablets & Medicines for Pharmacist Discussion
+  checkPageBreak(35);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(23, 23, 23);
+  doc.text('2. RELEVANT TABLETS & MEDICINES (FOR PHARMACIST DISCUSSION)', margin, y);
+  y += 5;
+
+  const relevantMeds = selectedSymptoms.map((s) => s.name.toLowerCase());
+  const suggested = analysis.suggestedMedicinesForPharmacistReview && analysis.suggestedMedicinesForPharmacistReview.length > 0
+    ? analysis.suggestedMedicinesForPharmacistReview
+    : [
+        {
+          name: 'Acetaminophen (Tylenol 500mg Tablets)',
+          form: 'Tablet',
+          genericName: 'Acetaminophen',
+          purpose: 'Analgesic & Antipyretic for pain and fever reduction',
+          pharmacistNote: 'First-line non-sedating relief for tension headaches and body aches',
+          caution: 'Avoid alcohol and never exceed 4,000mg/day to protect liver health',
+        },
+        {
+          name: 'Ibuprofen (Advil 200mg Tablets)',
+          form: 'Tablet',
+          genericName: 'Ibuprofen',
+          purpose: 'NSAID for inflammatory pain, joint stiffness, and cramps',
+          pharmacistNote: 'Take with food or milk to safeguard stomach lining',
+          caution: 'Avoid if history of stomach ulcers, kidney disease, or aspirin allergy',
+        },
+      ];
+
+  suggested.forEach((med) => {
+    checkPageBreak(18);
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(212, 212, 212);
+    doc.roundedRect(margin, y, contentWidth, 16, 1.5, 1.5, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(23, 23, 23);
+    doc.text(`${med.name} [Form: ${med.form}]`, margin + 4, y + 5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(82, 82, 82);
+    doc.text(`Active: ${med.genericName}  |  Purpose: ${med.purpose}`, margin + 4, y + 9.5);
+
+    doc.setTextColor(180, 83, 9);
+    doc.text(`Caution: ${med.caution}`, margin + 4, y + 13.5);
+
+    y += 19;
+  });
+
+  // SECTION 4: General Explanations
+  checkPageBreak(30);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(23, 23, 23);
+  doc.text('3. POSSIBLE GENERAL EXPLANATIONS (NON-DEFINITIVE)', margin, y);
+  y += 5;
+
+  analysis.possibleExplanations.forEach((exp) => {
+    checkPageBreak(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(38, 38, 38);
+    doc.text(`• ${exp.title}`, margin, y);
+    y += 4;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(82, 82, 82);
+    const splitDesc = doc.splitTextToSize(exp.description, contentWidth);
+    doc.text(splitDesc.slice(0, 2), margin + 3, y);
+    y += Math.min(splitDesc.length, 2) * 3.5 + 2;
+  });
+
+  // SECTION 5: Pharmacist Consultation Questions
+  checkPageBreak(25);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(23, 23, 23);
+  doc.text('4. QUESTIONS TO DISCUSS WITH YOUR PHARMACIST OR DOCTOR', margin, y);
+  y += 5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(64, 64, 64);
+  analysis.pharmacistConsultationGuide.slice(0, 3).forEach((q, idx) => {
+    const splitQ = doc.splitTextToSize(`${idx + 1}. ${q}`, contentWidth);
+    doc.text(splitQ, margin, y);
+    y += splitQ.length * 3.8 + 1;
+  });
+
+  // Mandatory Disclaimer
+  checkPageBreak(20);
+  y += 3;
+  doc.setDrawColor(23, 23, 23);
+  doc.setLineWidth(0.4);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 4;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(115, 115, 115);
+  doc.text('MANDATORY HEALTHCARE DISCLAIMER:', margin, y);
+  y += 3.5;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  const splitDisclaimer = doc.splitTextToSize(
+    `"${analysis.mandatoryDisclaimer}"`,
+    contentWidth
+  );
+  doc.text(splitDisclaimer, margin, y);
+
+  // Save the PDF file
+  const fileName = `AuraHealth_Clinical_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+  doc.save(fileName);
 }
 
 /**
@@ -330,7 +319,7 @@ export function printClinicalReport(
   selectedSymptoms: Symptom[]
 ): boolean {
   try {
-    const htmlContent = generateReportHtml(analysis, selectedSymptoms);
+    const htmlContent = generatePrintableHtml(analysis, selectedSymptoms);
 
     // Create an invisible iframe in the document
     const iframe = document.createElement('iframe');
@@ -361,7 +350,7 @@ export function printClinicalReport(
             if (document.body.contains(iframe)) {
               document.body.removeChild(iframe);
             }
-          }, 60000); // Clean up after print dialog finishes
+          }, 60000);
         }
       }, 350);
       return true;
@@ -381,22 +370,123 @@ export function printClinicalReport(
 }
 
 /**
- * Downloads the report as a clean self-contained HTML file (which can be opened in any browser and saved as PDF)
+ * Internal clean HTML generator for iframe-based native printing
  */
-export function downloadHtmlReport(
+function generatePrintableHtml(
   analysis: AIHealthAnalysis,
   selectedSymptoms: Symptom[]
-) {
-  const html = generateReportHtml(analysis, selectedSymptoms);
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `AuraHealth_Report_${new Date().toISOString().slice(0, 10)}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+): string {
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const triage = analysis.triage || {
+    level: 'routine',
+    headline: 'Healthcare Consultation',
+    timeframe: '24-48 hours',
+    actionPoints: [],
+  };
+
+  const triageColor =
+    triage.level === 'emergency'
+      ? '#e11d48'
+      : triage.level === 'urgent'
+      ? '#d97706'
+      : triage.level === 'self_care'
+      ? '#059669'
+      : '#2563eb';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AuraHealth - Clinical Health Report</title>
+  <style>
+    @page { size: A4; margin: 15mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #171717; background: #fff; line-height: 1.45; font-size: 12px; margin: 0; padding: 15px; }
+    .header { border-bottom: 2px solid #171717; padding-bottom: 10px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .title { font-size: 20px; font-weight: 700; margin: 0; color: #171717; }
+    .triage-box { border-left: 5px solid ${triageColor}; background: #fafafa; border: 1px solid #e5e5e5; border-left-width: 5px; padding: 10px 12px; margin-bottom: 14px; page-break-inside: avoid; }
+    .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #e5e5e5; padding-bottom: 3px; margin: 14px 0 8px 0; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: #f5f5f5; padding: 8px; border-radius: 4px; margin-bottom: 8px; }
+    .card { border: 1px solid #e5e5e5; border-radius: 4px; padding: 8px 10px; margin-bottom: 6px; page-break-inside: avoid; }
+    .pill { display: inline-block; background: #fff; border: 1px solid #d4d4d4; border-radius: 3px; padding: 1px 5px; font-size: 11px; margin: 2px 2px 2px 0; font-weight: 600; }
+    .tablet-badge { background: #171717; color: #fff; font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 5px; border-radius: 3px; display: inline-block; margin-right: 4px; }
+    .disclaimer { border-top: 1.5px solid #171717; padding-top: 8px; margin-top: 20px; font-size: 9.5px; color: #525252; page-break-inside: avoid; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="title">AuraHealth Clinical Intake Summary</h1>
+      <div style="font-size:10px; color:#525252;">AI Symptom Analysis & Pharmacist Medicine Reference Report</div>
+    </div>
+    <div style="font-size:10px; color:#737373; text-align:right;">
+      <strong>Date:</strong> ${currentDate}
+    </div>
+  </div>
+
+  <div class="triage-box" style="border-left-color: ${triageColor};">
+    <div style="font-size:9px; font-weight:700; color:${triageColor}; text-transform:uppercase;">${triage.level.toUpperCase()} TIER</div>
+    <div style="font-size:14px; font-weight:700; margin: 2px 0;">${triage.headline}</div>
+    <div style="font-size:10px; color:#525252; margin-bottom:4px;">Window: ${triage.timeframe}</div>
+    <ul style="margin:0; padding-left:16px;">
+      ${triage.actionPoints.map((p) => `<li>${p}</li>`).join('')}
+    </ul>
+  </div>
+
+  <div class="section-title">1. Patient Reported Symptoms</div>
+  <div class="grid">
+    <div>
+      <span style="font-size:9px; text-transform:uppercase; color:#737373; font-weight:700; display:block;">Symptoms</span>
+      ${analysis.symptomSummary.symptoms.map((s) => `<span class="pill">${s}</span>`).join('')}
+    </div>
+    <div>
+      <span style="font-size:9px; text-transform:uppercase; color:#737373; font-weight:700; display:block;">Duration</span>
+      <strong>${analysis.symptomSummary.duration}</strong>
+    </div>
+    <div>
+      <span style="font-size:9px; text-transform:uppercase; color:#737373; font-weight:700; display:block;">Severity</span>
+      <strong>${analysis.symptomSummary.severity} Impact</strong>
+    </div>
+  </div>
+
+  ${
+    analysis.warningSigns && analysis.warningSigns.length > 0
+      ? `<div style="background:#fff1f2; border:1px solid #fecdd3; padding:8px 10px; border-radius:4px; margin-bottom:10px; color:#9f1239;">
+          <strong>CRITICAL WARNING SIGNS TO MONITOR:</strong>
+          <ul style="margin:2px 0 0 0; padding-left:16px;">
+            ${analysis.warningSigns.map((w) => `<li>${w}</li>`).join('')}
+          </ul>
+        </div>`
+      : ''
+  }
+
+  <div class="section-title">2. Relevant Tablets & Medicines (For Pharmacist Discussion)</div>
+  <div style="font-size:10.5px; color:#525252; margin-bottom:6px;">
+    The following verified over-the-counter tablets and remedies are commonly indicated for the symptoms reported. Consult your pharmacist before initiating therapy.
+  </div>
+  ${selectedSymptoms.slice(0, 3).map((sym) => `
+    <div class="card">
+      <div><span class="tablet-badge">Tablet / Oral Remedy</span> <strong>Medication consideration for: ${sym.name}</strong></div>
+      <div style="color:#525252; font-size:10px; margin-top:2px;">Discuss appropriate OTC analgesic, antihistamine, or gastrointestinal tablets with the dispensing pharmacist.</div>
+    </div>
+  `).join('')}
+
+  <div class="section-title">3. Questions for Your Pharmacist or Doctor</div>
+  <ul style="margin:0; padding-left:16px;">
+    ${analysis.pharmacistConsultationGuide.slice(0, 4).map((q) => `<li>${q}</li>`).join('')}
+  </ul>
+
+  <div class="disclaimer">
+    <strong>MANDATORY DISCLAIMER:</strong> "${analysis.mandatoryDisclaimer}"
+  </div>
+</body>
+</html>`;
 }
 
 /**
@@ -445,24 +535,15 @@ ${
     : '  No immediate emergency flags reported.'
 }
 
-4. ALLERGY ALERTS
-${
-  analysis.allergyAlerts && analysis.allergyAlerts.length > 0
-    ? analysis.allergyAlerts.map((a) => `  * ${a}`).join('\n')
-    : '  No specific medicine allergy conflicts detected.'
-}
+4. SUGGESTED TABLETS & MEDICINES (FOR PHARMACIST REVIEW)
+- Acetaminophen 500mg Tablets: Pain/fever relief
+- Ibuprofen 200mg Tablets: Inflammatory pain/swelling
+- Cetirizine 10mg Tablets: Allergic rhinitis & hives
+- Famotidine 20mg Tablets: Acid indigestion & heartburn
+- Guaifenesin 600mg Tablets: Chest congestion & mucus clearance
+(Consult a pharmacist or physician before taking any medication)
 
-5. POSSIBLE GENERAL EXPLANATIONS (EDUCATIONAL ONLY)
-${analysis.possibleExplanations
-  .map(
-    (e, idx) =>
-      `  ${idx + 1}. ${e.title}
-     ${e.description}
-     Uncertainty Note: ${e.uncertaintyNote}`
-  )
-  .join('\n\n')}
-
-6. QUESTIONS FOR YOUR DOCTOR OR PHARMACIST
+5. QUESTIONS FOR YOUR DOCTOR OR PHARMACIST
 ${analysis.pharmacistConsultationGuide.map((q, idx) => `  ${idx + 1}. ${q}`).join('\n')}
 
 =====================================================

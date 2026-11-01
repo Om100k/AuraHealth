@@ -23,6 +23,9 @@ export const MedicineModal: React.FC<MedicineModalProps> = ({
               <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-neutral-900 text-white">
                 {medicine.otcStatus}
               </span>
+              <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-800 border border-neutral-300">
+                {medicine.formType}
+              </span>
               <span className="text-xs text-neutral-500 font-medium">
                 Pharmacist Verified
               </span>

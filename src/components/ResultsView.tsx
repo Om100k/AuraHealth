@@ -17,11 +17,12 @@ import {
   RotateCcw,
   Sparkles,
   Download,
+  Pill,
 } from 'lucide-react';
 import { AIHealthAnalysis, Medicine, Symptom } from '../types';
 import { MEDICINES_CATALOGUE } from '../data/medicines';
 import { PrintReportModal } from './PrintReportModal';
-import { printClinicalReport, downloadHtmlReport } from '../utils/printReport';
+import { printClinicalReport, downloadPdfReport } from '../utils/printReport';
 
 interface ResultsViewProps {
   analysis: AIHealthAnalysis;
@@ -135,8 +136,8 @@ ${analysis.mandatoryDisclaimer}`;
     setIsPrintModalOpen(true);
   };
 
-  const handleDownload = () => {
-    downloadHtmlReport(analysis, selectedSymptoms);
+  const handleDownloadPdf = () => {
+    downloadPdfReport(analysis, selectedSymptoms);
   };
 
   return (
@@ -181,12 +182,12 @@ ${analysis.mandatoryDisclaimer}`;
           </button>
 
           <button
-            onClick={handleDownload}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-xs font-medium text-neutral-700 transition-colors"
-            title="Save standalone report file (can be printed or saved as PDF)"
+            onClick={handleDownloadPdf}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-xs font-semibold text-rose-900 transition-colors"
+            title="Download pure PDF clinical report"
           >
-            <Download className="w-3.5 h-3.5 text-neutral-500" />
-            <span>Save PDF / HTML</span>
+            <Download className="w-3.5 h-3.5 text-rose-700" />
+            <span>Download PDF</span>
           </button>
 
           <button
@@ -409,18 +410,23 @@ ${analysis.mandatoryDisclaimer}`;
         </div>
       )}
 
-      {/* SECTION C: Pharmacist-Verified Medicine Information Catalogue */}
+      {/* SECTION C: Pharmacist-Suggested Medicines & Tablets */}
       <div className="p-6 rounded-2xl bg-white border border-neutral-200 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-neutral-100">
           <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-neutral-600" />
-            <h3 className="text-base font-semibold text-neutral-900 tracking-tight">
-              C. Medicine Information (Pharmacist-Verified Catalogue)
-            </h3>
+            <Pill className="w-5 h-5 text-neutral-800" />
+            <div>
+              <h3 className="text-base font-semibold text-neutral-900 tracking-tight">
+                C. Suggested Tablets & Medicines for Pharmacist Discussion
+              </h3>
+              <p className="text-xs text-neutral-500">
+                Verified over-the-counter tablets matching your reported symptom profile.
+              </p>
+            </div>
           </div>
           <button
             onClick={onExploreAllMedicines}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-800 hover:text-neutral-950 underline cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-800 hover:text-neutral-950 underline cursor-pointer shrink-0"
           >
             <span>Browse Full Catalogue</span>
             <ExternalLink className="w-3.5 h-3.5" />
@@ -430,44 +436,108 @@ ${analysis.mandatoryDisclaimer}`;
         {/* Safety Note on Prescriptions */}
         <div className="p-3.5 rounded-xl bg-neutral-50 border border-neutral-200 text-xs text-neutral-600 mb-5 leading-relaxed">
           <p className="font-semibold text-neutral-800 mb-0.5">
-            Important Educational Safety Protocol:
+            Important Pharmacist Discussion Protocol:
           </p>
-          Our platform does not automatically prescribe, rank, or recommend 1–10 medicines based on symptoms. We do not generate dosages or treatment schedules. Below is verified pharmacological reference data for educational discussion with your pharmacist.
+          Our platform does not automatically prescribe, rank, or recommend 1–10 medicines based on symptoms. We do not generate dosages or treatment schedules. The tablets and formulations below provide structured pharmacological reference points to discuss with your dispensing pharmacist or primary doctor.
         </div>
 
-        {/* Relevant Medicine Profiles Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {relevantMedicines.map((med) => (
-            <div
-              key={med.id}
-              onClick={() => onOpenMedicineDetails(med)}
-              className="p-4 rounded-xl border border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-xs transition-all cursor-pointer group flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <h4 className="text-sm font-semibold text-neutral-900 group-hover:text-neutral-950">
-                    {med.name}
-                  </h4>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-600 shrink-0">
-                    {med.otcStatus}
-                  </span>
+        {/* Tailored Tablet Suggestions */}
+        {analysis.suggestedMedicinesForPharmacistReview && analysis.suggestedMedicinesForPharmacistReview.length > 0 && (
+          <div className="mb-6 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-700 flex items-center gap-1.5">
+              <span>Specific OTC Tablets & Remedies to Discuss</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {analysis.suggestedMedicinesForPharmacistReview.map((med, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-xl border border-neutral-200 bg-neutral-50/60 hover:bg-neutral-50 hover:border-neutral-300 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-neutral-900 text-white">
+                          {med.form || 'Tablet'}
+                        </span>
+                        <span className="text-[10px] font-semibold text-neutral-500">
+                          OTC Oral Form
+                        </span>
+                      </div>
+                    </div>
+
+                    <h5 className="text-sm font-bold text-neutral-900 mb-1">
+                      {med.name}
+                    </h5>
+
+                    <p className="text-xs text-neutral-600 mb-2">
+                      <strong className="text-neutral-800">Target Relief: </strong>
+                      {med.purpose}
+                    </p>
+
+                    <div className="p-2.5 rounded-lg bg-white border border-neutral-200 text-xs text-neutral-700 mb-2 space-y-1">
+                      <p>
+                        <strong className="text-neutral-800">Active Ingredient: </strong>
+                        {med.genericName}
+                      </p>
+                      <p className="text-[11px] text-neutral-600">
+                        <strong className="text-neutral-700">Pharmacist Note: </strong>
+                        {med.pharmacistNote}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-neutral-200/80 text-[11px] text-amber-800 font-medium">
+                    ⚠️ {med.caution}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Relevant Verified Medicine Profiles Grid from Catalogue */}
+        <div>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2.5">
+            Verified Pharmacist Monographs
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {relevantMedicines.map((med) => (
+              <div
+                key={med.id}
+                onClick={() => onOpenMedicineDetails(med)}
+                className="p-4 rounded-xl border border-neutral-200 bg-white hover:border-neutral-300 hover:shadow-xs transition-all cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 border border-neutral-200">
+                        {med.formType}
+                      </span>
+                      <h4 className="text-sm font-semibold text-neutral-900 group-hover:text-neutral-950">
+                        {med.name}
+                      </h4>
+                    </div>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-600 shrink-0">
+                      {med.otcStatus}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-neutral-500 mb-2">
+                    Generic: <span className="font-medium text-neutral-700">{med.genericName}</span>
+                  </p>
+
+                  <p className="text-xs text-neutral-600 line-clamp-2 mb-3">
+                    {med.commonUses[0]}
+                  </p>
                 </div>
 
-                <p className="text-xs text-neutral-500 mb-2">
-                  Generic: <span className="font-medium text-neutral-700">{med.genericName}</span>
-                </p>
-
-                <p className="text-xs text-neutral-600 line-clamp-2 mb-3">
-                  {med.commonUses[0]}
-                </p>
+                <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-700 font-semibold group-hover:text-neutral-950">
+                  <span>View full tablet monograph & cautions</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-800 group-hover:translate-x-0.5 transition-all" />
+                </div>
               </div>
-
-              <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500 font-medium">
-                <span>View monograph details</span>
-                <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-800 group-hover:translate-x-0.5 transition-all" />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 

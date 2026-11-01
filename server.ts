@@ -154,6 +154,104 @@ function generateFallbackAnalysis(
       'Disclose any history of stomach ulcers, hypertension, asthma, or kidney/liver sensitivities.',
       'Ask the pharmacist to explain non-prescription supportive measures suitable for your specific age and symptoms.',
     ],
+    suggestedMedicinesForPharmacistReview: (() => {
+      const symText = symptoms.map((s) => s.name.toLowerCase() + ' ' + s.category.toLowerCase()).join(' ');
+      const list: Array<{
+        name: string;
+        form: string;
+        genericName: string;
+        purpose: string;
+        pharmacistNote: string;
+        caution: string;
+      }> = [];
+
+      if (symText.includes('head') || symText.includes('fever') || symText.includes('ache') || symText.includes('pain') || symText.includes('muscle')) {
+        list.push({
+          name: 'Acetaminophen (Tylenol 500mg Tablets)',
+          form: 'Tablet',
+          genericName: 'Acetaminophen / Paracetamol',
+          purpose: 'Analgesic and fever reducer for tension headaches, muscle aches, and viral fever.',
+          pharmacistNote: 'Preferred first-line pain tablet when stomach sensitivity or ulcers are present.',
+          caution: 'Never exceed 4,000mg/day across all combination cold medicines to safeguard liver health.',
+        });
+        list.push({
+          name: 'Ibuprofen (Advil 200mg Tablets)',
+          form: 'Tablet',
+          genericName: 'Ibuprofen (NSAID)',
+          purpose: 'Reduces inflammation, joint stiffness, dental pain, and acute cramps.',
+          pharmacistNote: 'Always ingest with meals or a glass of milk to prevent gastric irritation.',
+          caution: 'Avoid if you have active stomach ulcers, chronic kidney disease, or aspirin allergies.',
+        });
+      }
+
+      if (symText.includes('stomach') || symText.includes('heartburn') || symText.includes('acid') || symText.includes('digest')) {
+        list.push({
+          name: 'Famotidine (Pepcid AC 20mg Tablets)',
+          form: 'Tablet',
+          genericName: 'Famotidine',
+          purpose: 'H2-blocker that suppresses stomach acid production to relieve heartburn and indigestion.',
+          pharmacistNote: 'Can be taken 15-60 minutes before meals known to trigger acid reflux.',
+          caution: 'Limit self-treatment to 14 consecutive days unless directed by a gastroenterologist.',
+        });
+      }
+
+      if (symText.includes('allerg') || symText.includes('sneeze') || symText.includes('nose') || symText.includes('itch') || symText.includes('rash')) {
+        list.push({
+          name: 'Cetirizine (Zyrtec 10mg Tablets)',
+          form: 'Tablet',
+          genericName: 'Cetirizine Hydrochloride',
+          purpose: '24-hour second-generation antihistamine for itchy eyes, runny nose, and allergic hives.',
+          pharmacistNote: 'Fast-acting daily allergy tablet; may cause mild somnolence in select users.',
+          caution: 'Use caution before driving or operating heavy equipment until personal response is known.',
+        });
+      }
+
+      if (symText.includes('cough') || symText.includes('chest') || symText.includes('throat')) {
+        list.push({
+          name: 'Guaifenesin (Mucinex 600mg Tablets)',
+          form: 'Tablet',
+          genericName: 'Guaifenesin',
+          purpose: 'Expectorant tablet that thins bronchial mucus to make chest coughs productive.',
+          pharmacistNote: 'Must be taken with a full 8oz glass of water to maximize mucus thinning action.',
+          caution: 'Consult a physician if cough persists over 7 days or is accompanied by high fever.',
+        });
+      }
+
+      if (symText.includes('diarrhea') || symText.includes('stool')) {
+        list.push({
+          name: 'Loperamide (Imodium A-D 2mg Caplets/Tablets)',
+          form: 'Tablet',
+          genericName: 'Loperamide Hydrochloride',
+          purpose: 'Slows intestinal motility to control loose watery stools.',
+          pharmacistNote: 'Take with oral rehydration electrolyte solution to replace fluid loss.',
+          caution: 'Never exceed recommended package limits due to serious cardiac warning risks.',
+        });
+      }
+
+      // Default baseline if none matched
+      if (list.length === 0) {
+        list.push(
+          {
+            name: 'Acetaminophen (Tylenol 500mg Tablets)',
+            form: 'Tablet',
+            genericName: 'Acetaminophen / Paracetamol',
+            purpose: 'General symptom pain and discomfort management.',
+            pharmacistNote: 'First-line non-sedating relief for tension, headache, or malaise.',
+            caution: 'Do not combine with other acetaminophen-containing products.',
+          },
+          {
+            name: 'Famotidine (Pepcid AC 20mg Tablets)',
+            form: 'Tablet',
+            genericName: 'Famotidine',
+            purpose: 'Acid reducer for mealtime indigestion and gastric upset.',
+            pharmacistNote: 'Consult pharmacist regarding timing and drug interactions.',
+            caution: 'Seek medical care if chest pain radiates to arm or neck.',
+          }
+        );
+      }
+
+      return list.slice(0, 4);
+    })(),
     mandatoryDisclaimer:
       'Our platform provides educational health information and medicine-related guidance only. It does not diagnose diseases or prescribe medicines. Always consult a qualified doctor or pharmacist before taking any medication.',
   };
@@ -294,6 +392,22 @@ Follow-up Responses:
               type: Type.ARRAY,
               items: { type: Type.STRING },
               description: 'Specific questions to discuss with a pharmacist',
+            },
+            suggestedMedicinesForPharmacistReview: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING, description: 'Common OTC tablet or medicine name' },
+                  form: { type: Type.STRING, description: 'Tablet, Caplet, Capsule, Syrup, etc.' },
+                  genericName: { type: Type.STRING, description: 'Active pharmaceutical ingredient' },
+                  purpose: { type: Type.STRING, description: 'What symptom it helps relieve' },
+                  pharmacistNote: { type: Type.STRING, description: 'Guidance to discuss with the dispensing pharmacist' },
+                  caution: { type: Type.STRING, description: 'Essential safety caution or allergy warning' },
+                },
+                required: ['name', 'form', 'genericName', 'purpose', 'pharmacistNote', 'caution'],
+              },
+              description: 'Suggested OTC tablets or remedies matching the symptom profile for pharmacist discussion',
             },
             mandatoryDisclaimer: {
               type: Type.STRING,

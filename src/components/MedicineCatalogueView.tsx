@@ -119,9 +119,14 @@ export const MedicineCatalogueView: React.FC<MedicineCatalogueViewProps> = ({
           >
             <div>
               <div className="flex items-start justify-between gap-2 mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 border border-neutral-200">
-                  {med.otcStatus}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-neutral-900 text-white">
+                    {med.formType}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 border border-neutral-200">
+                    {med.otcStatus}
+                  </span>
+                </div>
                 <Pill className="w-4 h-4 text-neutral-400 group-hover:text-neutral-900 transition-colors" />
               </div>
 

@@ -100,6 +100,14 @@ export interface AIHealthAnalysis {
   };
   educationalGuidance: string[];
   pharmacistConsultationGuide: string[];
+  suggestedMedicinesForPharmacistReview?: Array<{
+    name: string;
+    form: string;
+    genericName: string;
+    purpose: string;
+    pharmacistNote: string;
+    caution: string;
+  }>;
   mandatoryDisclaimer: string;
 }
 
@@ -108,6 +116,7 @@ export interface Medicine {
   name: string;
   genericName: string;
   drugCategory: string;
+  formType: 'Tablet' | 'Caplet' | 'Capsule' | 'Syrup' | 'Cream / Topical' | 'Nasal Spray' | 'Eye Drops' | 'Oral Solution';
   commonUses: string[];
   importantWarnings: string[];
   knownAllergyConcerns: string[];
@@ -118,3 +127,4 @@ export interface Medicine {
   storageAdvice: string;
   relevantSymptomKeywords: string[];
 }
+

@@ -7,12 +7,12 @@ import {
   Copy,
   Check,
   ShieldCheck,
-  ExternalLink,
+  Pill,
 } from 'lucide-react';
 import { AIHealthAnalysis, Symptom } from '../types';
 import {
   printClinicalReport,
-  downloadHtmlReport,
+  downloadPdfReport,
   downloadTextReport,
 } from '../utils/printReport';
 
@@ -35,19 +35,23 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
   if (!isOpen) return null;
 
   const handlePrint = () => {
-    setPrintStatus('Opening system print dialog...');
+    setPrintStatus('Opening print dialogue...');
     const ok = printClinicalReport(analysis, selectedSymptoms);
     setTimeout(() => {
       setPrintStatus(
         ok
-          ? 'Print triggered! If dialog did not appear, use "Download Report File" below.'
-          : 'Could not launch print directly. Please use "Download Report File".'
+          ? 'Print dialogue initiated. You can also click "Download PDF Report" below.'
+          : 'Could not launch print dialogue. Please click "Download PDF Report".'
       );
     }, 1200);
   };
 
-  const handleDownloadHtml = () => {
-    downloadHtmlReport(analysis, selectedSymptoms);
+  const handleDownloadPdf = () => {
+    setPrintStatus('Generating PDF document...');
+    downloadPdfReport(analysis, selectedSymptoms);
+    setTimeout(() => {
+      setPrintStatus('PDF report downloaded successfully!');
+    }, 1000);
   };
 
   const handleDownloadTxt = () => {
@@ -88,10 +92,10 @@ ${analysis.mandatoryDisclaimer}`;
             </div>
             <div>
               <h3 className="text-base font-bold text-neutral-900 tracking-tight">
-                Print & Export Clinical Health Report
+                Print & PDF Clinical Health Report
               </h3>
               <p className="text-xs text-neutral-500">
-                Prepared for your doctor or pharmacist consultation.
+                Prepared with symptom summary, suggested tablets, and pharmacist consultation guide.
               </p>
             </div>
           </div>
@@ -116,17 +120,17 @@ ${analysis.mandatoryDisclaimer}`;
               <span>Print Document</span>
             </button>
 
-            {/* Download HTML (Save as PDF) */}
+            {/* Direct PDF Download Button */}
             <button
-              onClick={handleDownloadHtml}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-800 font-medium text-xs transition-colors"
-              title="Download standalone HTML file that can be saved as PDF or printed"
+              onClick={handleDownloadPdf}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-900 font-semibold text-xs transition-colors"
+              title="Download pure PDF report file"
             >
-              <Download className="w-3.5 h-3.5 text-neutral-500" />
-              <span>Save as PDF / HTML</span>
+              <Download className="w-3.5 h-3.5 text-rose-700" />
+              <span>Download PDF Report</span>
             </button>
 
-            {/* Download Text */}
+            {/* Plain Text Download */}
             <button
               onClick={handleDownloadTxt}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 font-medium text-xs transition-colors"
@@ -154,7 +158,7 @@ ${analysis.mandatoryDisclaimer}`;
           </button>
         </div>
 
-        {/* Status notification if triggered */}
+        {/* Notification Status */}
         {printStatus && (
           <div className="px-5 py-2 bg-neutral-100 border-b border-neutral-200 text-xs text-neutral-700 flex items-center justify-between">
             <span>{printStatus}</span>
@@ -177,7 +181,7 @@ ${analysis.mandatoryDisclaimer}`;
                   AuraHealth Clinical Intake Summary
                 </h2>
                 <p className="text-xs text-neutral-500 mt-0.5">
-                  AI Symptom Analysis & Pharmacist Health Reference Report
+                  AI Symptom Analysis & Pharmacist Medicine Reference Report
                 </p>
               </div>
               <div className="text-right text-[11px] text-neutral-500">
@@ -263,10 +267,57 @@ ${analysis.mandatoryDisclaimer}`;
               </div>
             )}
 
+            {/* Suggested Tablets & Medicines */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-600 border-b border-neutral-200 pb-1 mb-2 flex items-center gap-1.5">
+                <Pill className="w-3.5 h-3.5 text-neutral-700" />
+                <span>2. Suggested Tablets & OTC Medicines for Pharmacist Discussion</span>
+              </h4>
+              <p className="text-[11px] text-neutral-500 mb-2">
+                The following oral tablets and formulations are relevant for discussion with your dispensing pharmacist:
+              </p>
+
+              <div className="space-y-2">
+                <div className="p-3 border border-neutral-200 rounded-lg bg-neutral-50/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-1.5 py-0.5 rounded bg-neutral-900 text-white text-[9px] font-bold uppercase">
+                      Tablet
+                    </span>
+                    <strong className="text-neutral-900 text-xs">
+                      Acetaminophen (Tylenol / Paracetamol 500mg)
+                    </strong>
+                  </div>
+                  <p className="text-[11px] text-neutral-600">
+                    <strong>Primary Use:</strong> First-line pain relief for headaches, joint aches, and fever reduction. Gentle on stomach.
+                  </p>
+                  <p className="text-[10px] text-amber-700 mt-0.5">
+                    <strong>Caution:</strong> Do not combine with other acetaminophen drugs; limit to maximum 4,000mg/day.
+                  </p>
+                </div>
+
+                <div className="p-3 border border-neutral-200 rounded-lg bg-neutral-50/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-1.5 py-0.5 rounded bg-neutral-900 text-white text-[9px] font-bold uppercase">
+                      Tablet
+                    </span>
+                    <strong className="text-neutral-900 text-xs">
+                      Ibuprofen (Advil / Motrin 200mg)
+                    </strong>
+                  </div>
+                  <p className="text-[11px] text-neutral-600">
+                    <strong>Primary Use:</strong> Relieves swelling, inflammatory joint stiffness, menstrual cramps, and dental pain.
+                  </p>
+                  <p className="text-[10px] text-amber-700 mt-0.5">
+                    <strong>Caution:</strong> Always take with food or milk; avoid if you have active stomach ulcers or kidney sensitivity.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* General Explanations */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-600 border-b border-neutral-200 pb-1 mb-2">
-                2. General Considerations (Non-Definitive)
+                3. General Considerations (Non-Definitive)
               </h4>
               <div className="space-y-2.5">
                 {analysis.possibleExplanations.map((exp, idx) => (
@@ -289,7 +340,7 @@ ${analysis.mandatoryDisclaimer}`;
             {/* Pharmacist Questions */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-600 border-b border-neutral-200 pb-1 mb-2">
-                3. Questions for Healthcare Provider / Pharmacist
+                4. Questions for Healthcare Provider / Pharmacist
               </h4>
               <ul className="list-decimal pl-4 space-y-1 text-xs text-neutral-700">
                 {analysis.pharmacistConsultationGuide.map((q, idx) => (
